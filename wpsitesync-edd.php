@@ -27,6 +27,8 @@ if (!class_exists('WPSiteSync_EDD')) {
 		const REQUIRED_VERSION = '1.3.3';		// minimum version of WPSiteSync required for this add-on to initialize
 		const REQUIRED_EDD_VERSION = '3.0';		// minimum version of EDD required for this add-on to initialize
 
+		private $_source_api = NULL;
+
 		private function __construct()
 		{
 			add_action('spectrom_sync_init', array($this, 'init'));
@@ -69,8 +71,14 @@ if (!class_exists('WPSiteSync_EDD')) {
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 
 			// hooks for adjusting Push content
-			add_filter('spectrom_sync_api_push_content', array($this, 'filter_push_content'), 10, 2);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
+			if (defined('DOING_AJAX') && DOING_AJAX) {
+				// we only need to load the Source API implementation when doing AJAX calls
+				$this->_load_class('eddsourceapi');
+				$this->_edd_api = new SyncEDDSourceApi();
+			}
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
+
 			// error/notice code translations
 			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
@@ -151,17 +159,6 @@ if (!class_exists('WPSiteSync_EDD')) {
 			$post_types[] = 'download';		// edd 'download' product
 
 			return $post_types;
-		}
-
-		/**
-		 * Callback for filtering the post data before it's sent to the Target. Here we check for image references within the meta data.
-		 * @param array $data The data being Pushed to the Target machine
-		 * @param SyncApiRequest $apirequest Instance of the API Request object
-		 * @return array The modified data
-		 */
-		public function filter_push_content($data, $apirequest)
-		{
-			return $data;
 		}
 
 		/**
