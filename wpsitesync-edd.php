@@ -69,6 +69,9 @@ if (!class_exists('WPSiteSync_EDD')) {
 			// hooks for adjusting Push content
 			add_filter('spectrom_sync_api_push_content', array($this, 'filter_push_content'), 10, 2);
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
+			// error/notice code translations
+			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
+			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
 		}
 
 		/**
@@ -109,6 +112,34 @@ if (!class_exists('WPSiteSync_EDD')) {
 		}
 
 		/**
+		 * Filters the errors list, adding Sync EDD specific code-to-string values
+		 * @param string $message The error string message to be returned
+		 * @param int $code The error code being evaluated
+		 * @return string The modified $message string, with EDD specific errors added to it
+		 */
+		public function filter_error_codes($message, $code)
+		{
+			$this->_load_class('eddapirequest');
+			$api = new SyncEDDApiRequest();
+			$message = $api->error_code_to_string($message, $code);
+			return $message;
+		}
+
+		/**
+		 * Filters the notices list, adding EDD specific code-to-string values
+		 * @param string $message The notice string message to be returned
+		 * @param int $code The notice code being evaluated
+		 * @return string The modified $message string, with EDD specific notices added to it
+		 */
+		public function filter_notice_codes($message, $code)
+		{
+			$this->_load_class('eddapirequest');
+			$api = new SyncEDDApiRequest();
+			$message = $api->notice_code_to_string($message, $code);
+			return $message;
+		}
+
+		/**
 		 * Callback for filtering the post data before it's sent to the Target. Here we check for image references within the meta data.
 		 * @param array $data The data being Pushed to the Target machine
 		 * @param SyncApiRequest $apirequest Instance of the API Request object
@@ -127,6 +158,16 @@ if (!class_exists('WPSiteSync_EDD')) {
 		 */
 		public function handle_push($target_post_id, $post_data, $response)
 		{
+		}
+
+		/**
+		 * Helper method to load class files when needed
+		 * @param string $class Name of class file to load
+		 */
+		private function _load_class($class)
+		{
+			$file = dirname(__FILE__) . '/classes/' . $class . '.php';
+			require_once($file);
 		}
 	}
 } // class_exists
