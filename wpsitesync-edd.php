@@ -66,6 +66,8 @@ if (!class_exists('WPSiteSync_EDD')) {
 				return;
 			}
 
+			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
+
 			// hooks for adjusting Push content
 			add_filter('spectrom_sync_api_push_content', array($this, 'filter_push_content'), 10, 2);
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
@@ -137,6 +139,18 @@ if (!class_exists('WPSiteSync_EDD')) {
 			$api = new SyncEDDApiRequest();
 			$message = $api->notice_code_to_string($message, $code);
 			return $message;
+		}
+
+		/**
+		 * Adds EDD custom post types to the list of `spectrom_sync_allowed_post_types`
+		 * @param array $post_types The post types to allow
+		 * @return array The allowed post types, with the EDD types added
+		 */
+		public function allow_custom_post_types($post_types)
+		{
+			$post_types[] = 'download';		// edd 'download' product
+
+			return $post_types;
 		}
 
 		/**
