@@ -12,7 +12,7 @@ if (!class_exists('SyncEDDSourceApi', FALSE)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__);
 			add_filter('spectrom_sync_api_arguments', array($this, 'filter_api_arguments'), 10, 2);
 			add_filter('spectrom_sync_api_push_content', array($this, 'filter_push_content'), 10, 2);
-			add_action('spectrom_sync_api_response', array($this, 'check_api_response'), 10, 2);
+			add_action('spectrom_sync_api_response', array($this, 'check_api_response'), 10, 3);
 		}
 
 		/**
