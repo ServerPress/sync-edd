@@ -3,13 +3,14 @@
 if (!class_exists('SyncEDDSourceApi', FALSE)) {
 	class SyncEDDSourceApi
 	{
-		const HEADER_EDD_VERSION = 'x-edd-version';
-
 		private $_api_request = NULL;					// instance of the SyncApiRequest object conducting the current API request
 
 		public function __construct()
 		{
 SyncDebug::log(__METHOD__.'():' . __LINE__);
+			if (!class_exists('SyncEDDApiRequest', FALSE))
+				require_once(dirname(__FILE__) . '/eddapirequest.php');
+
 			add_filter('spectrom_sync_api_arguments', array($this, 'filter_api_arguments'), 10, 2);
 			add_filter('spectrom_sync_api_push_content', array($this, 'filter_push_content'), 10, 2);
 			add_action('spectrom_sync_api_response', array($this, 'check_api_response'), 10, 3);
@@ -24,7 +25,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 		public function filter_api_arguments($remote_args, $action)
 		{
 			if ('push' === $action || 'pull' === $action)
-				$remote_args['headers'][self::HEADER_EDD_VERSION] = EDD_VERSION;
+				$remote_args['headers'][SyncEDDApiRequest::HEADER_EDD_VERSION] = EDD_VERSION;
 			return $remote_args;
 		}
 
@@ -39,8 +40,6 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 			if (SyncApiRequest::ERROR_INVALID_POST_TYPE === $response->error_code && 'push' === $action) {
 				if (isset($data['post_data']['post_type']) && 'download' === $data['post_data']['post_type']) {
 					// only update the error code if it's a 'download' post type, otherwise it's a real invalid post type error
-					if (!class_exists('SyncEDDApiRequest', FALSE))
-						require_once(dirname(__FILE__) . '/eddapirequest.php');
 					$response->response->error_code = SyncEDDApiRequest::ERROR_EDD_NOT_ON_TARGET;
 					$response->response->has_errors = 1;
 				}

@@ -169,6 +169,9 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 		 */
 		public function handle_push($target_post_id, $post_data, $response)
 		{
+			$this->_load_class('eddtargetapi');
+			$target = new SyncEDDTargetApi();
+			$target->handle_push($target_post_id, $post_data, $response);
 		}
 
 		/**
