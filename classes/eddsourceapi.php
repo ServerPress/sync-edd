@@ -81,7 +81,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id . ' type=' .
 				$products = maybe_unserialize($meta);
 				// iterate through all Download products included in the Bundle
 				foreach ($products as $download_product_id) {
-Sync_Debug::log(__METHOD__.'():' . __LINE__ . ' processing download product id ' . $download_product_id);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' processing download product id ' . $download_product_id);
 					// get the Download product's download file information
 					$download_files = get_post_meta($download_product_id, 'edd_download_files', TRUE);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' file information: ' . var_export($download_files, TRUE));
@@ -90,7 +90,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' file information: ' . var_export(
 				break;
 
 			case 'sync_standard':
-				$download_files = $data['post_meta']['edd_download_files'][0];
+				$download_files = maybe_unserialize($data['post_meta']['edd_download_files'][0]);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' file information: ' . var_export($download_files, TRUE));
 				$this->_send_download_files($download_files, $post_id);
 				break;
@@ -114,10 +114,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing');
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' files=' . var_export($files, TRUE));
 			// Note: The $files parameter is taken from the 'edd_download_files' postmeta entry for the Download product
 
-			$fileinfo = maybe_unserialize($files);
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' info=' . var_export($fileinfo, TRUE));
 			// single array entry looks like:
-			foreach ($fileinfo as $idx => $file) {
+			foreach ($files as $idx => $file) {
 /**
 array (
   1 =>
