@@ -141,6 +141,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . " calling send_media('{$file['file'
 		 */
 		public function filter_media_fields($fields)
 		{
+			// TODO: change this to a site key?
 			$fields['edd_download'] = '1';
 			return $fields;
 		}
