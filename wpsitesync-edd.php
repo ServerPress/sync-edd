@@ -54,6 +54,14 @@ if (!class_exists('WPSiteSync_EDD')) {
 		 */
 		public function init()
 		{
+			if (!class_exists('WPSiteSyncContent', FALSE)) {
+				if (is_admin() && current_user_can('install_plugins')) {
+					add_action('admin_notices', array($this, 'notice_requires_wpss'));
+					add_action('admin_init', array($this, 'disable_plugin'));
+				}
+				return;
+			}
+
 			// enforce minimum EDD version
 			if (!defined('EDD_VERSION')) {
 				if (is_admin() && current_user_can('install_plugins')) {
@@ -72,6 +80,9 @@ if (!class_exists('WPSiteSync_EDD')) {
 				return;
 			}
 
+			if (is_admin())
+				add_action('wp_loaded', array($this, 'wp_loaded'));
+
 			// hooks for adjusting Push content
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			if (defined('DOING_AJAX') && DOING_AJAX) {
@@ -85,6 +96,16 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
 			$this->_init = TRUE;
+		}
+
+		/**
+		 * Display admin notice to install/activate WPSiteSync for Content
+		 */
+		public function notice_requires_wpss()
+		{
+			$this->_show_notice(sprintf(__('WPSiteSync for EDD requires the main <em>WPSiteSync for Content</em> plugin to be installed and activated. Please <a href="%1$s">click here</a> to install or <a href="%2$s">click here</a> to activate.', 'wpsitesync-edd'),
+				admin_url('plugin-install.php?tab=search&s=wpsitesync'),
+				admin_url('plugins.php')), 'notice-warning');
 		}
 
 		/**
@@ -114,6 +135,15 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			echo '<div class="notice ', $class, ' ', ($dismissable ? 'is-dismissible' : ''), '">';
 			echo '<p>', $msg, '</p>';
 			echo '</div>';
+		}
+
+		/**
+		 * Callback for 'wp_loaded' action when everything all plugins have been initialized
+		 */
+		public function wp_loaded()
+		{
+			$this->_load_class('eddadmin');
+			new SyncEDDAdmin();
 		}
 
 		/**

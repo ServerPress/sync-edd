@@ -16,7 +16,6 @@ class SyncEDDApiRequest
 	const NOTICE = 1000;
 
 	const HEADER_EDD_VERSION = 'x-edd-version';
-	const MIN_EDD_VERSION = '3.0';
 
 	/**
 	 * Converts an error code to a language translated string
@@ -31,7 +30,7 @@ class SyncEDDApiRequest
 		case self::ERROR_BUNDLE_PRODUCT_NOT_SYNCD:		$message = __('One of the Products in your Bundle has not yet been Pushed to the Target site.', 'wpsitesync-edd');	break;
 		case self::ERROR_EDD_NOT_ON_TARGET:				$message = __('Push failed. WPSiteSync for EDD is not active on Target.', 'wpsitesync-edd'); break;
 		case self::ERROR_BAD_EDD_VERSION:				$message = __('The version of Easy Digital Downloads on the Target site cannot be detected.', 'wpsitesync-edd'); break;
-		case self::ERROR_MINIMUM_VERSION:				$message = sprintf(__('The version of Easy Digital Downloads on the Target needs to be at least %1$d.', 'wpsitesync-edd'), self::MIN_EDD_VERSION); break;
+		case self::ERROR_MINIMUM_VERSION:				$message = sprintf(__('The version of Easy Digital Downloads on the Target needs to be at least %1$d.', 'wpsitesync-edd'), WPSiteSync_EDD::REQUIRED_EDD_VERSION); break;
 		case self::ERROR_MISSING_PRODUCT_FROM_BUNDLE:	$message = __('One of the Products in the Bundle has not yet been Syncd to the Target site.', 'wpsitesync-edd'); break;
 		}
 		return $message;
