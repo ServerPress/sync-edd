@@ -27,11 +27,15 @@ if (!class_exists('WPSiteSync_EDD')) {
 		const REQUIRED_VERSION = '1.3.3';		// minimum version of WPSiteSync required for this add-on to initialize
 		const REQUIRED_EDD_VERSION = '3.0';		// minimum version of EDD required for this add-on to initialize
 
+		private $_init = FALSE;
 		private $_source_api = NULL;
 
 		private function __construct()
 		{
 			add_action('spectrom_sync_init', array($this, 'init'));
+			add_filter('upload_dir', array($this, 'filter_upload_dir'), 50);
+			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
+			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 		}
 
 		/*
@@ -68,8 +72,6 @@ if (!class_exists('WPSiteSync_EDD')) {
 				return;
 			}
 
-			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
-
 			// hooks for adjusting Push content
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			if (defined('DOING_AJAX') && DOING_AJAX) {
@@ -82,6 +84,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			// error/notice code translations
 			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
+			$this->_init = TRUE;
 		}
 
 		/**
@@ -156,9 +159,28 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 		 */
 		public function allow_custom_post_types($post_types)
 		{
-			$post_types[] = 'download';		// edd 'download' product
+			if ($this->_init ||
+				(isset($_POST['img_path']) && isset($_POST['edd_download']) && '1' === $_POST['edd_download'])) {
+				// either WPSiteSync for EDD has been initialized for an Admin page request
+				// or it's a EDD Download product file upload request
+				$post_types[] = 'download';		// edd 'download' product
+			}
 
 			return $post_types;
+		}
+		/**
+		 * Callback for filtering the allowed mime types for uploads. Needed to allow any file types when processing EDD attachment files.
+		 * @param boolean $allow TRUE to allow the type; otherwise FALSE
+		 * @param array $type Array of File Type information returned from wp_check_filetype()
+		 * @return TRUE to indicate that all file types are allowed for EDD download attachments
+		 */
+		public function filter_allowed_mime_types($allowed, $type)
+		{
+			if (isset($_POST['img_path']) && isset($_POST['edd_download']) && '1' === $_POST['edd_download']) {
+				// it's an EDD Download product file attachment- allow anything to be uploaded
+				$allowed = TRUE;
+			}
+			return $allowed;
 		}
 
 		/**
@@ -172,6 +194,27 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			$this->_load_class('eddtargetapi');
 			$target = new SyncEDDTargetApi();
 			$target->handle_push($target_post_id, $post_data, $response);
+		}
+
+		/**
+		 * Filters the location for the uploaded files.
+		 * @param array $upload Array of information about upload location
+		 * @return array Modified location information if it's an EDD file upload
+		 */
+		public function filter_upload_dir($upload)
+		{
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post=' . var_export($_POST, TRUE));
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' files=' . var_export($_FILES, TRUE));
+			if (isset($_POST['edd_download']) && '1' === $_POST['edd_download']) {
+				if (function_exists('edd_set_upload_dir')) {
+					// use the EDD function if it exists
+					$upload = edd_set_upload_dir($upload);
+				} else {
+					// as a last resort, force an /edd prefix
+					$upload['subdir'] = '/edd' . $upload['subdir'];
+				}
+			}
+			return $upload;
 		}
 
 		/**

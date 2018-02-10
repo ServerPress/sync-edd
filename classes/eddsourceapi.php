@@ -70,7 +70,6 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id . ' type=' .
 
 			// set up filters needed for send_media() calls
 			add_filter('spectrom_sync_upload_media_fields', array($this, 'filter_media_fields'));
-			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 
 			// handle the different EDD product types separately
 			switch ($prod_type) {
@@ -97,7 +96,6 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' file information: ' . var_export(
 
 			// do this just in case someone else wants to use send_media()
 			remove_filter('spectrom_sync_upload_media_fields', array($this, 'filter_media_fields'));
-			remove_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing');
 			return $data;
@@ -134,18 +132,6 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . " calling send_media('{$file['file'
 				// send_media() handles duplicate download files being send- no need to check for that
 				$this->_api_request->send_media($file['file'], $post_id, 0, $download_id);
 			}
-		}
-
-		/**
-		 * Callback for filtering the allowed extensions. Needed to allow any file types when processing EDD attachment files.
-		 * @param boolean $allow TRUE to allow the type; otherwise FALSE
-		 * @param array $type Array of File Type information returned from wp_check_filetype()
-		 * @return TRUE to indicate that all file types are allowed for EDD download attachments
-		 */
-		public function filter_allowed_mime_types($allowed, $type)
-		{
-			$allowed = TRUE;
-			return $allowed;
 		}
 
 		/**
