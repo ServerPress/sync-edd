@@ -33,6 +33,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 		private function __construct()
 		{
 			add_action('spectrom_sync_init', array($this, 'init'));
+			add_action('init', array($this, 'check_wpss_active'));
 			add_filter('upload_dir', array($this, 'filter_upload_dir'), 50);
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
@@ -54,14 +55,6 @@ if (!class_exists('WPSiteSync_EDD')) {
 		 */
 		public function init()
 		{
-			if (!class_exists('WPSiteSyncContent', FALSE)) {
-				if (is_admin() && current_user_can('install_plugins')) {
-					add_action('admin_notices', array($this, 'notice_requires_wpss'));
-					add_action('admin_init', array($this, 'disable_plugin'));
-				}
-				return;
-			}
-
 			// enforce minimum EDD version
 			if (!defined('EDD_VERSION')) {
 				if (is_admin() && current_user_can('install_plugins')) {
@@ -80,6 +73,12 @@ if (!class_exists('WPSiteSync_EDD')) {
 				return;
 			}
 
+			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
+#			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+#SyncDebug::log(__METHOD__ . '() no license');
+#				return;
+#			}
+
 			if (is_admin())
 				add_action('wp_loaded', array($this, 'wp_loaded'));
 
@@ -96,6 +95,20 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
 			$this->_init = TRUE;
+		}
+
+		/**
+		 * Callback for 'init' action. Checks to ensure WPSiteSync is active and displays message if not
+		 */
+		public function check_wpss_active()
+		{
+			if (!class_exists('WPSiteSyncContent', FALSE)) {
+				if (is_admin() && current_user_can('install_plugins')) {
+					add_action('admin_notices', array($this, 'notice_requires_wpss'));
+					add_action('admin_init', array($this, 'disable_plugin'));
+				}
+				return;
+			}
 		}
 
 		/**
@@ -191,9 +204,11 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 		{
 			if ($this->_init ||
 				(isset($_POST['img_path']) && isset($_POST['edd_download']) && '1' === $_POST['edd_download'])) {
-				// either WPSiteSync for EDD has been initialized for an Admin page request
-				// or it's a EDD Download product file upload request
-				$post_types[] = 'download';		// edd 'download' product
+#				if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+					// either WPSiteSync for EDD has been initialized for an Admin page request
+					// or it's a EDD Download product file upload request
+					$post_types[] = 'download';		// edd 'download' product
+#				}
 			}
 
 			return $post_types;
@@ -255,6 +270,23 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 		{
 			$file = dirname(__FILE__) . '/classes/' . $class . '.php';
 			require_once($file);
+		}
+
+		/**
+		 * Add the EDD add-on to the list of known WPSiteSync extensions
+		 * @param array $extensions The list to add to
+		 * @param boolean $set
+		 * @return array The list of extensions, with the WPSiteSync for EDD add-on included
+		 */
+		public function filter_active_extensions($extensions, $set = FALSE)
+		{
+#			if ($set || WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME))
+				$extensions['sync_edd'] = array(
+					'name' => self::PLUGIN_NAME,
+					'version' => self::PLUGIN_VERSION,
+					'file' => __FILE__,
+				);
+			return $extensions;
 		}
 	}
 } // class_exists
