@@ -29,6 +29,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 
 		private $_init = FALSE;
 		private $_source_api = NULL;
+		private $_post_types = array('download');	// list of currently supported drug types
 
 		private function __construct()
 		{
@@ -36,6 +37,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 			add_action('init', array($this, 'check_wpss_active'));
 			add_filter('upload_dir', array($this, 'filter_upload_dir'), 50);
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
+			add_filter('spectrom_sync_tax_list', array(&$this, 'filter_taxonomies'), 10, 1);
 			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 		}
 
@@ -213,6 +215,24 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 
 			return $post_types;
 		}
+
+		/**
+		 * Adds EDD specific taxonomies to the list of available taxonomies for Syncing
+		 * @param array $tax Array of taxonomy information to filter
+		 * @return array The taxonomy list, with all EDD taxonomies added to it
+		 */
+		public function filter_taxonomies($taxonomies)
+		{
+			$all_tax = get_taxonomies(array(), 'objects');
+			foreach ($all_tax as $tax_name => $tax_info) {
+				$diff = array_diff($tax_info->object_type, $this->_post_types);
+				if (0 === count($diff)) {
+					$taxonomies[$tax_name] = $tax_info;
+				}
+			}
+			return $taxonomies;
+		}
+
 		/**
 		 * Callback for filtering the allowed mime types for uploads. Needed to allow any file types when processing EDD attachment files.
 		 * @param boolean $allow TRUE to allow the type; otherwise FALSE
