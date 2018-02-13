@@ -26,8 +26,8 @@ SyncDebug::log(__METHOD__.'(' . $target_post_id. '):' . __LINE__);
 				$response->error_code(SyncEDDApiRequest::ERROR_BAD_EDD_VERSION);
 				return;
 			}
-			if (version_compare($edd_version, SyncEDDApiRequest::MIN_EDD_VERSION, 'lt')) {
-				$response->error_code(SyncEDDApiRequest::ERROR_MINIMUM_VERSION, SyncEDDApiRequest::MIN_EDD_VERSION);
+			if (version_compare($edd_version, WPSiteSync_EDD::REQUIRED_EDD_VERSION, 'lt')) {
+				$response->error_code(SyncEDDApiRequest::ERROR_MINIMUM_VERSION, WPSiteSync_EDD::REQUIRED_EDD_VERSION);
 				return;
 			}
 			if (1 === SyncOptions::get_int('strict') && !version_compare($edd_version, EDD_VERSION, 'eq')) {
