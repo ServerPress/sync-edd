@@ -29,7 +29,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 
 		private $_init = FALSE;
 		private $_source_api = NULL;
-		private $_post_types = array('download');	// list of currently supported drug types
+		private $_post_types = array('download');	// list of currently supported post types
 
 		private function __construct()
 		{
@@ -209,7 +209,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 #				if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
 					// either WPSiteSync for EDD has been initialized for an Admin page request
 					// or it's a EDD Download product file upload request
-					$post_types[] = 'download';		// edd 'download' product
+					$post_types = array_merge($post_types, $this->_post_types);
 #				}
 			}
 
