@@ -97,6 +97,12 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' file information: ' . var_export(
 			// do this just in case someone else wants to use send_media()
 			remove_filter('spectrom_sync_upload_media_fields', array($this, 'filter_media_fields'));
 
+			// remove specific post meta values #16
+			if (isset($data['post_meta'])) {
+				unset($data['post_meta']['_edd_download_sales']);
+				unset($data['post_meta']['_edd_download_earnings']);
+			}
+
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing');
 			return $data;
 		}
