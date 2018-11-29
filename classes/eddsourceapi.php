@@ -7,7 +7,7 @@ if (!class_exists('SyncEDDSourceApi', FALSE)) {
 
 		public function __construct()
 		{
-SyncDebug::log(__METHOD__.'():' . __LINE__);
+//SyncDebug::log(__METHOD__.'():' . __LINE__);
 			if (!class_exists('SyncEDDApiRequest', FALSE))
 				require_once(dirname(__FILE__) . '/eddapirequest.php');
 

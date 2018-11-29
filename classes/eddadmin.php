@@ -10,14 +10,14 @@ if (!class_exists('SyncEddAdmin', FALSE)) {
 
 		public function admin_init()
 		{
-SyncDebug::log(__METHOD__.'():' . __LINE__);
+//SyncDebug::log(__METHOD__.'():' . __LINE__);
 			global $pagenow;
 			if ('post.php' !== $pagenow)
 				return;
 
 			$input = new SyncInput();
 			$post_id = $input->get_int('post', 0);
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
 			if (0 !== $post_id) {
 				$post = get_post($post_id);
 				if ('download' === $post->post_type)
@@ -27,7 +27,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
 
 		public function enqueue_scripts()
 		{
-SyncDebug::log(__METHOD__.'():' . __LINE__);
+//SyncDebug::log(__METHOD__.'():' . __LINE__);
 			wp_register_script('sync-edd-admin', plugin_dir_url(dirname(__FILE__)) . '/assets/js/sync-edd-admin.js',
 				array('jquery', 'sync'),
 				WPSiteSync_EDD::PLUGIN_VERSION, TRUE);

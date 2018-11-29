@@ -37,7 +37,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 			add_action('init', array($this, 'check_wpss_active'));
 			add_filter('upload_dir', array($this, 'filter_upload_dir'), 50);
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
-			add_filter('spectrom_sync_tax_list', array(&$this, 'filter_taxonomies'), 10, 1);
+			add_filter('spectrom_sync_tax_list', array($this, 'filter_taxonomies'), 10, 1);
 			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 		}
 
@@ -66,14 +66,15 @@ if (!class_exists('WPSiteSync_EDD')) {
 				}
 				return;
 			}
-			if (version_compare(EDD_VERSION, self::REQUIRED_EDD_VERSION, 'lt')) {
-				if (is_admin() && current_user_can('install_plugins')) {
-					add_action('admin_notices', array($this, 'notice_minimum_edd_version'));
-					add_action('admin_init', array($this, 'disable_plugin'));
-					return;
-				}
-				return;
-			}
+			// remove minimum EDD version checking #17
+//			if (version_compare(EDD_VERSION, self::REQUIRED_EDD_VERSION, 'lt')) {
+//				if (is_admin() && current_user_can('install_plugins')) {
+//					add_action('admin_notices', array($this, 'notice_minimum_edd_version'));
+//					add_action('admin_init', array($this, 'disable_plugin'));
+//					return;
+//				}
+//				return;
+//			}
 
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
 #			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
@@ -85,7 +86,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 				add_action('wp_loaded', array($this, 'wp_loaded'));
 
 			// hooks for adjusting Push content
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 			if (defined('DOING_AJAX') && DOING_AJAX) {
 				// we only need to load the Source API implementation when doing AJAX calls
 				$this->_load_class('eddsourceapi');
@@ -124,7 +125,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 		}
 
 		/**
-		 * Display admin notice to upgrade EDD
+		 * Display admin notice to install/activate EDD
 		 */
 		public function notice_requires_edd()
 		{
@@ -153,7 +154,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking for AJAX');
 		}
 
 		/**
-		 * Callback for 'wp_loaded' action when everything all plugins have been initialized
+		 * Callback for 'wp_loaded' action when all plugins have been initialized
 		 */
 		public function wp_loaded()
 		{
