@@ -135,10 +135,11 @@ if (!class_exists('WPSiteSync_EDD')) {
 		/**
 		 * Display admin notice to upgrade EDD
 		 */
-		public function notice_minimum_edd_version()
-		{
-			$this->_show_notice(sprintf(__('WPSiteSync for EDD requires <em>Easy Digital Downloads</em> version %1$s or greater to be installed.', 'wpsitesync-edd'), self::REQUIRED_EDD_VERSION), 'notice-warning');
-		}
+		// commented out #1, #17
+//		public function notice_minimum_edd_version()
+//		{
+//			$this->_show_notice(sprintf(__('WPSiteSync for EDD requires <em>Easy Digital Downloads</em> version %1$s or greater to be installed.', 'wpsitesync-edd'), self::REQUIRED_EDD_VERSION), 'notice-warning');
+//		}
 
 		/**
 		 * Helper method to display notices
