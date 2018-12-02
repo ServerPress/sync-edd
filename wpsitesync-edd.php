@@ -93,11 +93,20 @@ if (!class_exists('WPSiteSync_EDD')) {
 				$this->_edd_api = new SyncEDDSourceApi();
 			}
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
+			add_action('spectrom_sync_push_api_response', array($this, 'check_push_api_response'));
 
 			// error/notice code translations
 			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
 			$this->_init = TRUE;
+		}
+
+		public function check_push_api_response($response)
+		{
+			if (SyncApiRequest::ERROR_INVALID_IMG_TYPE === $response->error_code) {
+				$this->_load_class('eddapirequest');
+				$response->error_code = SyncEDDApiRequest::ERROR_EDD_NOT_ON_TARGET;
+			}
 		}
 
 		/**
