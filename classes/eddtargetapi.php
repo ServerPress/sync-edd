@@ -83,6 +83,19 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' looking up Source ID ' . $downloa
 				break;
 			}
 
+			// update any shortcode content... but only for downloads
+			$content = stripslashes($post_data['post_content']);
+			if ($this->_update_shortcodes($content, $response) > 0) {
+				// had 1 or more shortcodes that were updated- we need to update the post_content with the changes
+				global $wpdb;
+				$sql = "UPDATE `{$wpdb->posts}`
+						SET `post_content`=%s
+						WHERE `ID`=%d ";
+				$wpdb->query($sql2 = $wpdb->prepare($sql, $content, $target_post_id));
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' updating content ' . $sql2);
+			}
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' no shortcodes in content');
+
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' continue processing data');
 		}
 
@@ -93,6 +106,96 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' continue processing data');
 		public function fixup_url_references($entry)
 		{
 			$entry->content = str_ireplace($this->_source_urls, $this->_target_urls, $entry->content);
+		}
+
+		/**
+		 * This will update any id= references in EDD shortcodes with the Target's content ID values
+		 * @param string $content The post Content containing the shortcodes
+		 * @param SyncApiResponse $response The response instance used for returning any error codes
+		 * @return int|boolean Number of modified shortcodes or FALSE if error.
+		 */
+		private function _update_shortcodes(&$content, $response)
+		{
+SyncDebug::log(__METHOD__.'():' . __LINE__);
+			$sc = new SyncEDDShortcodes();
+			$modified = 0;
+
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data=' . var_export($content, TRUE));
+			if (FALSE !== ($matches = $sc->search($content)))
+			{
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found shortcode content: ' . $content);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' matches: ' . var_export($matches, TRUE));
+
+				$source_site_key = SyncApiController::get_instance()->source_site_key;
+				$sync_model = new SyncModel();						// needed for ID lookups
+				$idx = 0;
+				foreach ($matches[2] as $match) {
+					// get the attributes found within the shortcode
+					$shortcode = $matches[0][$idx];					// contains the full shortcode
+					$res = $sc->extract_attributes($shortcode);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' res=' . var_export($res, TRUE));
+
+					switch (strtolower($match)) {
+					case 'purchase_link':
+						if (isset($res['attributes']['id'])) {
+							$download_id = abs($res['attributes']['id']);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' download id=' . $download_id);
+							$sync_data = $sync_model->get_sync_data($download_id, $source_site_key, 'post');
+							if (NULL === $sync_data) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data not found; returning');
+								$response->error_code(SyncEDDApiRequest::ERROR_SHORTCODE_REF_ID, $download_id);
+								return FALSE;
+							}
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' generating replacement shortcode for ' . $shortcode);
+
+							// replace the ID value in the shortcode with the Target's Content ID
+							$new_shortcode = $sc->replacement_shortcode($shortcode, 'id', $res['attributes']['id'], strval($sync_data->target_content_id));
+							if ($new_shortcode !== $shortcode) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' replacing ' . $shortcode . ' with ' . $new_shortcode);
+								$content = str_replace($shortcode, $new_shortcode, $content);
+								++$modified;
+							}
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' shortcodes match: ' . $new_shortcode);
+						}
+						break;
+
+					case 'download':
+					case 'edd_download':
+						$new_ids = array();
+						if (isset($res['attributes']['ids'])) {
+							$ids_value = $res['attributes']['ids'];
+							$ids = explode(',', $ids_value);
+							// look up each ID value and get it's replacement value
+							foreach ($ids as $download_id) {
+								$download_id = abs($download_id);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' download id=' . $download_id);
+								$sync_data = $sync_model->get_sync_data($download_id, $source_site_key, 'post');
+								if (NULL === $sync_data) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data not found; returning');
+									$response->error_code(SyncEDDApiRequest::ERROR_SHORTCODE_REF_ID, $download_id);
+									return FALSE;
+								}
+								$new_ids[] = $sync_data->target_content_id;
+							}
+
+							// replace the IDS value in the shortcode with the list of Target Content IDs
+							$new_shortcode = $sc->replacement_shortcode($shortcode, 'ids', $res['attributes']['id'], implode(',', $new_ids));
+							if ($new_shortcode !== $shortcode) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' replacing ' . $shortcode . ' with ' . $new_shortcode);
+								$content = str_replace($shortcode, $new_shortcode, $content);
+								++$modified;
+							}
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' shortcodes match: ' . $new_shortcode);
+						}
+						break;
+
+					default:
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found shortcode "' . $match . '" but no handler for it');
+					}
+				}
+			}
+
+			return $modified;
 		}
 	}
 }

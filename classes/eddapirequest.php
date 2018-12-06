@@ -12,6 +12,7 @@ class SyncEDDApiRequest
 	const ERROR_BAD_EDD_VERSION = 1004;
 	const ERROR_MINIMUM_VERSION = 1005;
 	const ERROR_MISSING_PRODUCT_FROM_BUNDLE = 1006;
+	const ERROR_SHORTCODE_REF_ID = 1007;
 
 	const NOTICE = 1000;
 
@@ -22,7 +23,7 @@ class SyncEDDApiRequest
 	 * @param int $code The integer error code. One of the `ERROR_*` values.
 	 * @return string The text value of the error code, translated to the current locale
 	 */
-	public function error_code_to_string($message, $code)
+	public function error_code_to_string($message, $code, $data)
 	{
 		switch ($code) {
 		case self::ERROR_VERSION_NOT_SUPPORTED:			$message = __('This version of Easy Digital Downloads is not supported. Please upgrade to 3.0 or above.', 'wpsitesync-edd');		break;
@@ -32,6 +33,7 @@ class SyncEDDApiRequest
 		case self::ERROR_BAD_EDD_VERSION:				$message = __('The version of Easy Digital Downloads on the Target site cannot be detected.', 'wpsitesync-edd'); break;
 		case self::ERROR_MINIMUM_VERSION:				$message = sprintf(__('The version of Easy Digital Downloads on the Target needs to be at least %1$d.', 'wpsitesync-edd'), WPSiteSync_EDD::REQUIRED_EDD_VERSION); break;
 		case self::ERROR_MISSING_PRODUCT_FROM_BUNDLE:	$message = __('One of the Products in the Bundle has not yet been Syncd to the Target site.', 'wpsitesync-edd'); break;
+		case self::ERROR_SHORTCODE_REF_ID:				$message = sprintf(__('One or more shortcodes on this page contain references to an EDD Download that has not yet been Pushed (ID=%d). Please Push the Download first.', 'wpsitesync-edd'), $data); break;
 		}
 		return $message;
 	}

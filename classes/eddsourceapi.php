@@ -56,11 +56,18 @@ if (!class_exists('SyncEDDSourceApi', FALSE)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__);
 			$this->_api_request = $apirequest;			// save this for use in _send_download_files()
 
+			// If we're not pushing content ['post_data'] will be empty. And if it's not a 'download' post type, we can ignore
 			if (!isset($data['post_data']) || 'download' !== $data['post_data']['post_type']) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' not a "download" post type');
 				// if it's not a 'download' post type, do not process. It's not an EDD 'Push' operation
 				return $data;
 			}
+			// Check for usage of EDD shortcodes. This will return 1 if there's a shortcode referring to a Download that hasn't been pushed.
+			if (1 === $this->_check_shortcodes($data, $apirequest)) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' using EDD shortcodes');
+				return $data;
+			}
+
 
 			$post_id = abs($data['post_id']);
 			$prod_type = 'sync_standard';		// default to this. non-bundles have no '_edd_product_type' postmeta
@@ -105,6 +112,69 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' file information: ' . var_export(
 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing');
 			return $data;
+		}
+
+		/**
+		 * Checks content to see if any shortcodes containing IDs are being used
+		 * @param array $data The data being Pushed to the Target, includes post data
+		 * @param SyncApiRequest $apirequest Instance of the API request object
+		 * @return int 0=no shortcode use; 1=shortcode use
+		 */
+		private function _check_shortcodes($data, $apirequest)
+		{
+SyncDebug::log(__METHOD__.'():' . __LINE__);
+			$sc = new SyncEDDShortcodes();
+
+			if (FALSE !== ($matches = $sc->search($data['post_data']['post_content'])))
+			{
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found shortcode content: ' . $data['post_data']['post_content']);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' matches: ' . var_export($matches, TRUE));
+				// shortcode is being used
+				$sync_model = new SyncModel();						// used for content lookups
+
+				$idx = 0;
+				foreach ($matches[2] as $match) {
+					// get the attributes found within the shortcode
+					$shortcode = $matches[0][$idx];					// contains the full shortcode
+					$res = $sc->extract_attributes($shortcode);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' res=' . var_export($res, TRUE));
+
+					switch (strtolower($match)) {
+					case 'purchase_link':
+						if (isset($res['attributes']['id'])) {
+							$download_id = abs($res['attributes']['id']);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' download id=' . $download_id);
+							$sync_data = $sync_model->get_sync_data($download_id, NULL, 'post');
+							if (NULL === $sync_data) {
+								$apirequest->get_response()->error_code(SyncEDDApiRequest::ERROR_SHORTCODE_REF_ID, $download_id);
+								return 1;
+							}
+						}
+						break;
+
+					case 'downloads':
+					case 'edd_downloads':
+						if (isset($res['attributes']['ids'])) {
+							$ids_value = $res['attributes']['ids'];
+							$ids = explode(',', $ids_value);
+							// check each ID in the list and make sure they've all been Pushed
+							foreach ($ids as $download_id) {
+								$sync_data = $sync_model->get_sync_data($download_id, NULL, 'post');
+								if (NULL === $sync_data) {
+									$apirequest->get_response()->error_code(SyncEDDApiRequest::ERROR_SHORTCODE_REF_ID, $download_id);
+									return 1;
+								}
+							}
+						}
+						break;
+
+					default:
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found shortcode "' . $match . '" but no handler for it');
+					}
+					++$idx;
+				}
+			}
+			return 0;
 		}
 
 		/**

@@ -90,13 +90,15 @@ if (!class_exists('WPSiteSync_EDD')) {
 			if (defined('DOING_AJAX') && DOING_AJAX) {
 				// we only need to load the Source API implementation when doing AJAX calls
 				$this->_load_class('eddsourceapi');
+				$this->_load_class('eddshortcodes');
 				$this->_edd_api = new SyncEDDSourceApi();
 			}
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
 			add_action('spectrom_sync_push_api_response', array($this, 'check_push_api_response'));
+	add_filter('upload_mimes', array($this, 'filter_mime_types'));
 
 			// error/notice code translations
-			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 2);
+			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 3);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
 			$this->_init = TRUE;
 		}
@@ -186,11 +188,11 @@ if (!class_exists('WPSiteSync_EDD')) {
 		 * @param int $code The error code being evaluated
 		 * @return string The modified $message string, with EDD specific errors added to it
 		 */
-		public function filter_error_codes($message, $code)
+		public function filter_error_codes($message, $code, $data)
 		{
 			$this->_load_class('eddapirequest');
 			$api = new SyncEDDApiRequest();
-			$message = $api->error_code_to_string($message, $code);
+			$message = $api->error_code_to_string($message, $code, $data);
 			return $message;
 		}
 
@@ -260,6 +262,32 @@ if (!class_exists('WPSiteSync_EDD')) {
 		}
 
 		/**
+		 * Filters the allowed Mime Types, adding whatever Mime Type is being uploaded via EDD Download attachment to be allowed.
+		 * @param array $mimes An array of allowed mime types
+		 * @return array Modified allowed Mime Type array
+		 */
+		public function filter_mime_types($mimes)
+		{
+SyncDebug::log(__METHOD__.'():' . __LINE__);
+			if ('POST' === $_SERVER['REQUEST_METHOD']) {
+//				$controller = SyncApiController::get_instance();
+				$input = new SyncInput();
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post=' . var_export($_POST, TRUE));
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' files=' . var_export($_FILES, TRUE));
+				if ('1' === $input->post('edd_download', '') && isset($_FILES['sync_file_upload']['name'])) {
+					$filename = $_FILES['sync_file_upload']['name'];
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' filename=' . $filename);
+					if (!empty($filename)) {
+						$parts = pathinfo($filename);
+						$mimes[$parts['extension']] = 'application/x-data';
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' added mime type for ' . var_export($parts, TRUE) . ' = ' . var_export($mimes, TRUE));
+					}
+				}
+			}
+			return $mimes;
+		}
+
+		/**
 		 * Handles fixup of data on the Target after SyncApiController has finished processing Content.
 		 * @param int $target_post_id The post ID being created/updated via API call
 		 * @param array $post_data Post data sent via API call
@@ -268,6 +296,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 		public function handle_push($target_post_id, $post_data, $response)
 		{
 			$this->_load_class('eddtargetapi');
+			$this->_load_class('eddshortcodes');
 			$target = new SyncEDDTargetApi();
 			$target->handle_push($target_post_id, $post_data, $response);
 		}
