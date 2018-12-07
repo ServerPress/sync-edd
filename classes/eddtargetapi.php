@@ -22,7 +22,7 @@ SyncDebug::log(__METHOD__.'(' . $target_post_id. '):' . __LINE__);
 
 			// check versions to make sure we have EDD 3.0+ and if in Strict Mode, Source and Target versions match
 			$edd_version = $api_controller->get_header(SyncEDDApiRequest::HEADER_EDD_VERSION);
-			if (empty($edd_version)) {
+			if (empty($edd_version) && 'download' === $post_data['post_type']) {
 				$response->error_code(SyncEDDApiRequest::ERROR_BAD_EDD_VERSION);
 				return;
 			}
@@ -32,56 +32,61 @@ SyncDebug::log(__METHOD__.'(' . $target_post_id. '):' . __LINE__);
 //				return;
 //			}
 			// require EDD versions on Source and Target to match, regardless of strict more setting #18
-			if (/*1 === SyncOptions::get_int('strict') && */ !version_compare($edd_version, EDD_VERSION, 'eq')) {
+			if ((/*1 === SyncOptions::get_int('strict') && */ !version_compare($edd_version, EDD_VERSION, 'eq')) && 'download' === $post_data['post_type']) {
 				$response->error_code(SyncEDDApiRequest::ERROR_EDD_VERSION_MISMATCH);
 				return;
 			}
 
+			// only perform this processing if it's an EDD download post type
+			if ('download' === $post_data['post_type']) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post data=' . var_export($post_data, TRUE));
-			$post_meta = $this->post_raw('post_meta');
+				$post_meta = $this->post_raw('post_meta');
 
-			// check that bundled products have been sync'd
-			$post_id = abs($post_data['ID']);
-			$prod_type = 'sync_standard';		// default to this. non-bundles have no '_edd_product_type' postmeta
-			if (isset($post_meta['_edd_product_type'][0]))
-				$prod_type = $post_meta['_edd_product_type'][0];
+				// check that bundled products have been sync'd
+				$post_id = abs($post_data['ID']);
+				$prod_type = 'sync_standard';		// default to this. non-bundles have no '_edd_product_type' postmeta
+				if (isset($post_meta['_edd_product_type'][0]))
+					$prod_type = $post_meta['_edd_product_type'][0];
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id . ' type=' . $prod_type);
 
-			// handle the different EDD Download product types
-			switch ($prod_type) {
-			case 'bundle':
-				// it's a bundle - make sure all bundled products have been sync'd
-				$site_key = $api_controller->source_site_key;
-				$products = $post_meta['_edd_bundled_products'][0];
+				// handle the different EDD Download product types
+				switch ($prod_type) {
+				case 'bundle':
+					// it's a bundle - make sure all bundled products have been sync'd
+					$site_key = $api_controller->source_site_key;
+					$products = $post_meta['_edd_bundled_products'][0];
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' products=' . var_export($products, TRUE));
-				$products = stripslashes($products);
+					$products = stripslashes($products);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' products=' . var_export($products, TRUE));
-				$products = maybe_unserialize($products);
+					$products = maybe_unserialize($products);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' products=' . var_export($products, TRUE));
-				$sync_model = new SyncModel();
-				foreach ($products as $download_product_id) {
+					$sync_model = new SyncModel();
+					foreach ($products as $download_product_id) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' looking up Source ID ' . $download_product_id);
-					$sync_data = $sync_model->get_sync_data($download_product_id, $site_key);
-					if (NULL === $sync_data) {
-						$response->error_code(SyncEDDApiRequest::ERROR_MISSING_PRODUCT_FROM_BUNDLE, $download_product_id);
-						return;
+						$sync_data = $sync_model->get_sync_data($download_product_id, $site_key);
+						if (NULL === $sync_data) {
+							$response->error_code(SyncEDDApiRequest::ERROR_MISSING_PRODUCT_FROM_BUNDLE, $download_product_id);
+							return;
+						}
 					}
+					break;
+
+				case 'sync_standard':
+					// process 'edd_download_files' postmeta data
+					$api_controller->get_fixup_domains($this->_source_urls, $this->_target_urls);
+
+					$download_files = $post_meta['edd_download_files'][0];
+					$download_files = stripslashes($download_files);
+					$ser = new SyncSerialize();
+					$download_data = $ser->parse_data($download_files, array($this, 'fixup_url_references'));
+					$meta_object = maybe_unserialize($download_data);
+					// write the modified meta data to the postmeta table
+					update_post_meta($target_post_id, 'edd_download_files', $meta_object);
+					break;
 				}
-				break;
+			} // 'download' === post_type
 
-			case 'sync_standard':
-				// process 'edd_download_files' postmeta data
-				$api_controller->get_fixup_domains($this->_source_urls, $this->_target_urls);
-
-				$download_files = $post_meta['edd_download_files'][0];
-				$download_files = stripslashes($download_files);
-				$ser = new SyncSerialize();
-				$download_data = $ser->parse_data($download_files, array($this, 'fixup_url_references'));
-				$meta_object = maybe_unserialize($download_data);
-				// write the modified meta data to the postmeta table
-				update_post_meta($target_post_id, 'edd_download_files', $meta_object);
-				break;
-			}
+			// the following processing is done on all post types
 
 			// update any shortcode content... but only for downloads
 			$content = stripslashes($post_data['post_content']);
@@ -94,7 +99,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' looking up Source ID ' . $downloa
 				$wpdb->query($sql2 = $wpdb->prepare($sql, $content, $target_post_id));
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' updating content ' . $sql2);
 			}
-else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' no shortcodes in content');
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' no EDD shortcodes in content');
 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' continue processing data');
 		}
