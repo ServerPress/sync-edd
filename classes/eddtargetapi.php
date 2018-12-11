@@ -126,8 +126,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 			$modified = 0;
 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data=' . var_export($content, TRUE));
-			if (FALSE !== ($matches = $sc->search($content)))
-			{
+			if (FALSE !== ($matches = $sc->search($content))) {
 //SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found shortcode content: ' . $content);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' matches: ' . var_export($matches, TRUE));
 
@@ -196,11 +195,15 @@ else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' shortcodes match: ' . $new_s
 
 					default:
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found shortcode "' . $match . '" but no handler for it');
-					}
-				}
-			}
+					} // switch
+					++$idx;					// increment index
+				} // foreach (matches)
+			} // FALSE !== sc->matches - checks to see if any shortcodes exist within the content
 
-			return $modified;
+			// remove the temporary markers that prevent modifying already updated attributes
+			$content = str_replace(SyncEDDShortcodes::MARKER, '', $content);
+
+			return $modified;				// number of modified shortcodes
 		}
 	}
 }

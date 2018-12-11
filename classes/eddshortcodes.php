@@ -5,6 +5,8 @@
  */
 class SyncEDDShortcodes
 {
+	const MARKER = '{!--sync-modified--}';				// used to mark already modified shortcode values
+
 	/**
 	 * Get a list of known EDD shortcodes that can contain an ID reference to a Download product
 	 * @return array An array containing all known EDD shortcodes that can reference an ID
@@ -133,6 +135,7 @@ SyncDebug::log(__METHOD__."('{$shortcode}', '{$attr}'= , '{$attr_value}', '{$new
 			}
 
 			// move $idx past any spaces after the attr
+			$pos_attr_end = $pos_attr + strlen($attr);
 			for ($idx = $pos_attr + strlen($attr); ' ' === substr($new_shortcode, $idx, 1) && $idx < $len; ++$idx)
 				;
 			// $idx now points to the '='
@@ -166,8 +169,12 @@ SyncDebug::log(__METHOD__."('{$shortcode}', '{$attr}'= , '{$attr_value}', '{$new
 				continue;						// search again
 			}
 
+			// at this point, $idx points to the quote character at the beginning of the attribute value
+			// $pos_attr_end points to the first character after the attribute
+
 			// we have the index for the original shortcode attribute value - change it
-			$new_shortcode = substr($new_shortcode, 0, $idx) . $new_value . substr($new_shortcode, $idx + strlen($attr_value));
+			$new_shortcode = substr($new_shortcode, 0, $pos_attr_end) . self::MARKER .
+				substr($new_shortcode, $pos_attr_end, $idx - $pos_attr_end) . $new_value . substr($new_shortcode, $idx + strlen($attr_value));
 			break;								// done
 		}
 
