@@ -24,9 +24,11 @@ class SyncEDDShortcodes
 //			'edd_register',
 //			'download_discounts',
 //			'purchase_collection',
+			// the following 2 shortcodes have the same callback- they're the same
 			'downloads',				// [downloads ids=""]
-			'edd_downloads',			// [downloads ids=""]
-//			'edd_price',
+			'edd_downloads',			// [edd_downloads ids=""]
+
+			'edd_price',				// [edd_price id={download_id}]
 //			'edd_receipt',
 //			'edd_profile_editor',
 		);
@@ -103,7 +105,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' matches[5]=' . var_export($matche
 
 		$code = preg_replace('/\s*=\s*/', '=', $matches[5]);			// remove any spaces around '=' char
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' extracting attributes from ' . $code);
-		if (preg_match_all('#([a-z0-9\-]+)((=)("|\')(.*?)("|\'))?(?:(\s)|$)#i', $code, $attrs)) {
+		if (preg_match_all('#([a-zA-Z0-9_\-]+)((=)("|\')(.*?)("|\'))?(?:(\s)|$)#i', $code, $attrs)) {
 			$results['attributes'] = array();
 			foreach ($attrs[1] as $i => $attr) {
 				$results['attributes'][$attr] = isset($attrs[5][$i]) && ! empty($attrs[5][$i])

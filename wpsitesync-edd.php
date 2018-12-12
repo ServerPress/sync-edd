@@ -298,7 +298,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' added mime type for ' . var_expor
 			$this->_load_class('eddtargetapi');
 			$this->_load_class('eddshortcodes');
 			$target = new SyncEDDTargetApi();
-			$target->handle_push($target_post_id, $post_data, $response);
+
+			return $target->handle_push($target_post_id, $post_data, $response);
 		}
 
 		/**

@@ -12,7 +12,7 @@ if (!class_exists('SyncEDDTargetApi', FALSE)) {
 		 * @param array $post_data Post data sent via API call
 		 * @param SyncApiResponse $response Response instance
 		 */
-		public function handle_push($target_post_id, $post_data, $response)
+		public function handle_push($target_post_id, $post_data, SyncApiResponse $response)
 		{
 SyncDebug::log(__METHOD__.'(' . $target_post_id. '):' . __LINE__);
 			if (!class_exists('SyncEDDApiRequest', FALSE))
@@ -102,6 +102,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' updating content ' . $sql2);
 else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' no EDD shortcodes in content');
 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' continue processing data');
+			return $target_post_id;
 		}
 
 		/**
@@ -163,8 +164,8 @@ else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' shortcodes match: ' . $new_s
 						}
 						break;
 
-					case 'download':
-					case 'edd_download':
+					case 'downloads':
+					case 'edd_downloads':
 						$new_ids = array();
 						if (isset($res['attributes']['ids'])) {
 							$ids_value = $res['attributes']['ids'];
@@ -184,6 +185,29 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data not found; returning');
 
 							// replace the IDS value in the shortcode with the list of Target Content IDs
 							$new_shortcode = $sc->replacement_shortcode($shortcode, 'ids', $res['attributes']['id'], implode(',', $new_ids));
+							if ($new_shortcode !== $shortcode) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' replacing ' . $shortcode . ' with ' . $new_shortcode);
+								$content = str_replace($shortcode, $new_shortcode, $content);
+								++$modified;
+							}
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' shortcodes match: ' . $new_shortcode);
+						}
+						break;
+
+					case 'edd_price':
+						if (isset($res['attributes']['id'])) {
+							$download_id = abs($res['attributes']['id']);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' download id=' . $download_id);
+							$sync_data = $sync_model->get_sync_data($download_id, $source_site_key, 'post');
+							if (NULL === $sync_data) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data not found; returning');
+								$response->error_code(SyncEDDApiRequest::ERROR_SHORTCODE_REF_ID, $download_id);
+								return FALSE;
+							}
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' generating replacement shortcode for ' . $shortcode);
+
+							// replace the ID value in the shortcode with the Target's Content ID
+							$new_shortcode = $sc->replacement_shortcode($shortcode, 'id', $res['attributes']['id'], strval($sync_data->target_content_id));
 							if ($new_shortcode !== $shortcode) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' replacing ' . $shortcode . ' with ' . $new_shortcode);
 								$content = str_replace($shortcode, $new_shortcode, $content);
