@@ -23,7 +23,7 @@ class SyncEDDApiRequest
 	 * @param int $code The integer error code. One of the `ERROR_*` values.
 	 * @return string The text value of the error code, translated to the current locale
 	 */
-	public function error_code_to_string($message, $code, $data)
+	public function error_code_to_string($message, $code, $data = NULL)
 	{
 		switch ($code) {
 		case self::ERROR_VERSION_NOT_SUPPORTED:			$message = __('This version of Easy Digital Downloads is not supported. Please upgrade to 3.0 or above.', 'wpsitesync-edd');		break;

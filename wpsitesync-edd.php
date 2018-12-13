@@ -188,7 +188,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 		 * @param int $code The error code being evaluated
 		 * @return string The modified $message string, with EDD specific errors added to it
 		 */
-		public function filter_error_codes($message, $code, $data)
+		public function filter_error_codes($message, $code, $data = NULL)
 		{
 			$this->_load_class('eddapirequest');
 			$api = new SyncEDDApiRequest();
