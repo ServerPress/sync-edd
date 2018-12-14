@@ -184,7 +184,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data not found; returning');
 							}
 
 							// replace the IDS value in the shortcode with the list of Target Content IDs
-							$new_shortcode = $sc->replacement_shortcode($shortcode, 'ids', $res['attributes']['id'], implode(',', $new_ids));
+							$new_shortcode = $sc->replacement_shortcode($shortcode, 'ids', $res['attributes']['ids'], implode(',', $new_ids));
 							if ($new_shortcode !== $shortcode) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' replacing ' . $shortcode . ' with ' . $new_shortcode);
 								$content = str_replace($shortcode, $new_shortcode, $content);
