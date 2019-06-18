@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: WPSiteSync for EDD
-Plugin URI: http://wpsitesync.com
+Plugin URI: https://wpsitesync.com/downloads/wpsitesync-for-edd/
 Description: Allow EDD Content to be Synced to the Target site
 Author: WPSiteSync
-Author URI: http://wpsitesync.com
+Author URI: https://wpsitesync.com
 Version: 1.0 Beta
 Text Domain: wpsitesync-edd
 
@@ -77,10 +77,10 @@ if (!class_exists('WPSiteSync_EDD')) {
 //			}
 
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
-#			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
-#SyncDebug::log(__METHOD__ . '() no license');
-#				return;
-#			}
+			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+SyncDebug::log(__METHOD__ . '() no license');
+				return;
+			}
 
 			if (is_admin())
 				add_action('wp_loaded', array($this, 'wp_loaded'));
@@ -219,11 +219,11 @@ if (!class_exists('WPSiteSync_EDD')) {
 		{
 			if ($this->_init ||
 				(isset($_POST['img_path']) && isset($_POST['edd_download']) && '1' === $_POST['edd_download'])) {
-#				if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+				if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
 					// either WPSiteSync for EDD has been initialized for an Admin page request
 					// or it's a EDD Download product file upload request
 					$post_types = array_merge($post_types, $this->_post_types);
-#				}
+				}
 			}
 
 			return $post_types;
@@ -341,7 +341,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' added mime type for ' . var_expor
 		 */
 		public function filter_active_extensions($extensions, $set = FALSE)
 		{
-#			if ($set || WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME))
+			if ($set || WPSiteSyncContent::get_instance()->get_license()->check_license('sync_edd', self::PLUGIN_KEY, self::PLUGIN_NAME))
 				$extensions['sync_edd'] = array(
 					'name' => self::PLUGIN_NAME,
 					'version' => self::PLUGIN_VERSION,
