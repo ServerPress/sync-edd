@@ -7,6 +7,8 @@ class SyncEDDShortcodes
 {
 	const MARKER = '{!--sync-modified--}';				// used to mark already modified shortcode values
 
+	// TODO: refactor to use WPSiteSync Code shortcode manipulation mechanism
+
 	/**
 	 * Get a list of known EDD shortcodes that can contain an ID reference to a Download product
 	 * @return array An array containing all known EDD shortcodes that can reference an ID

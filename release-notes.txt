@@ -1,0 +1,1 @@
+enhancement: Update .htaccess rules for Apache 2.4.

@@ -2,11 +2,12 @@
 /*
 Plugin Name: WPSiteSync for EDD
 Plugin URI: https://wpsitesync.com/downloads/wpsitesync-for-edd/
-Description: Allow EDD Content to be Synced to the Target site
+Description: Allow Easy Digital Downloads Content to be Synchronized between two WordPress sites.
 Author: WPSiteSync
 Author URI: https://wpsitesync.com
-Version: 1.0 Beta
+Version: 1.1
 Text Domain: wpsitesync-edd
+Copyright: 2018-2020 WPSiteSync.com
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
 images, manuals, cascading stylesheets and included JavaScript are NOT GPL.
@@ -22,9 +23,9 @@ if (!class_exists('WPSiteSync_EDD')) {
 		private static $_instance = NULL;
 
 		const PLUGIN_NAME = 'WPSiteSync for EDD';
-		const PLUGIN_VERSION = '1.0';
+		const PLUGIN_VERSION = '1.1';
 		const PLUGIN_KEY = '1249a07a842b9deacc1dbe511836db9c';
-		const REQUIRED_VERSION = '1.3.3';		// minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.6';			// minimum version of WPSiteSync required for this add-on to initialize
 		const REQUIRED_EDD_VERSION = '3.0';		// minimum version of EDD required for this add-on to initialize
 
 		private $_init = FALSE;
@@ -35,6 +36,7 @@ if (!class_exists('WPSiteSync_EDD')) {
 		{
 			add_action('spectrom_sync_init', array($this, 'init'));
 			add_action('init', array($this, 'check_wpss_active'));
+			// TODO: move to 'spectrom_sync_api_init' callback
 			add_filter('upload_dir', array($this, 'filter_upload_dir'), 50);
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 			add_filter('spectrom_sync_tax_list', array($this, 'filter_taxonomies'), 10, 1);
@@ -93,6 +95,9 @@ SyncDebug::log(__METHOD__ . '() no license');
 				$this->_load_class('eddshortcodes');
 				$this->_edd_api = new SyncEDDSourceApi();
 			}
+
+			// TODO: move into 'spectrom_sync_api_init' callback
+			// TODO: add 'spectrom_sync_shortcode_list' filter for shortcodes
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
 			add_action('spectrom_sync_push_api_response', array($this, 'check_push_api_response'));
 	add_filter('upload_mimes', array($this, 'filter_mime_types'));
@@ -123,6 +128,7 @@ SyncDebug::log(__METHOD__ . '() no license');
 				}
 				return;
 			}
+			// TODO: check minimum version of WPSS
 		}
 
 		/**

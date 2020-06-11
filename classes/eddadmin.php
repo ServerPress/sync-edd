@@ -15,10 +15,12 @@ if (!class_exists('SyncEddAdmin', FALSE)) {
 			if ('post.php' !== $pagenow)
 				return;
 
+			// TODO: extend SyncInput
 			$input = new SyncInput();
 			$post_id = $input->get_int('post', 0);
 //SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
 			if (0 !== $post_id) {
+				// TODO: license checks
 				$post = get_post($post_id);
 				if ('download' === $post->post_type)
 					add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));

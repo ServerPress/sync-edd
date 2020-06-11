@@ -15,6 +15,8 @@ if (!class_exists('SyncEDDTargetApi', FALSE)) {
 		public function handle_push($target_post_id, $post_data, SyncApiResponse $response)
 		{
 SyncDebug::log(__METHOD__.'(' . $target_post_id. '):' . __LINE__);
+			// TODO: add license checks
+
 			if (!class_exists('SyncEDDApiRequest', FALSE))
 				require_once(dirname(__FILE__) . '/eddapirequest.php');
 
